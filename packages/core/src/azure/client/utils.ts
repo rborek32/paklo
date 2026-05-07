@@ -123,7 +123,9 @@ export function getPullRequestForDependencyNames(
     });
 }
 
-export function getPullRequestChangedFiles(data: DependabotCreatePullRequest | DependabotUpdatePullRequest) {
+export function getPullRequestChangedFiles(
+  data: DependabotCreatePullRequest | DependabotUpdatePullRequest,
+): AzdoFileChange[] {
   return data['updated-dependency-files']
     .filter((file) => file.type === 'file')
     .map((file) => {

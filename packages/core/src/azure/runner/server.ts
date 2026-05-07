@@ -1,4 +1,5 @@
 import {
+  type AzdoFileChange,
   type AzdoPrExtractedWithProperties,
   type AzdoPullRequestMergeStrategy,
   type AzureDevOpsClientWrapper,
@@ -76,7 +77,7 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
     const first = pending[0]!;
     const allDependencies = pending.flatMap((entry) => entry.request.dependencies);
     const allPersistedDependencies = pending.flatMap((entry) => getPersistedPr(entry.request).dependencies);
-    const changedFilesByPath = new Map<string, ReturnType<typeof getPullRequestChangedFiles>[number]>();
+    const changedFilesByPath = new Map<string, AzdoFileChange>();
     for (const entry of pending) {
       for (const file of getPullRequestChangedFiles(entry.request)) {
         changedFilesByPath.set(file.path, file);
@@ -86,8 +87,8 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
     const mergedSettings = pending.reduce(
       (acc, entry) => {
         const effective = getEffectiveUpdateSettings(config, entry.update);
-        acc.assignees = Array.from(new Set([...acc.assignees, ...(effective.assignees ?? [])]));
-        acc.labels = Array.from(new Set([...acc.labels, ...(effective.labels ?? [])]));
+        acc.assignees = [...new Set([...acc.assignees, ...(effective.assignees ?? [])])];
+        acc.labels = [...new Set([...acc.labels, ...(effective.labels ?? [])])];
         acc.milestone ??= effective.milestone;
         acc['target-branch'] ??= effective['target-branch'];
         acc['pull-request-branch-name'] ??= effective['pull-request-branch-name'];
@@ -137,7 +138,7 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
     const sourceBranch = getBranchNameForMultiEcosystemGroup({
       groupname: dependencyGroupName,
       dependencies: allPersistedDependencies,
-      separator: mergedSettings['pull-request-branch-name']?.separator ?? '-',
+      separator: mergedSettings['pull-request-branch-name']?.separator,
     });
 
     const existingBranch = existingBranchNames?.find((branch) => sourceBranch === branch) || [];
@@ -150,14 +151,14 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
       };
     }
 
-    const combinedTitle = `chore(deps): Bump the "${dependencyGroupName}" group with ${pending.length} updates across multiple ecosystems`;
-    const combinedBody = pending
-      .map((entry) => entry.request['pr-body']?.trim())
-      .filter((body) => body && body.length > 0)
+    const title = `chore(deps): Bump the "${dependencyGroupName}" group with ${pending.length} updates across multiple ecosystems`;
+    const body = pending
+      .map(({ request }) => request['pr-body']?.trim())
+      .filter((body): body is string => !!body)
       .join('\n\n');
     const description = getPullRequestDescription({
       packageManager: first.packageManager,
-      body: combinedBody,
+      body,
       dependencies: allDependencies,
       maxDescriptionLength: PR_DESCRIPTION_MAX_LENGTH,
     });
@@ -166,15 +167,10 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
     const newPullRequestId = await authorClient.createPullRequest({
       project,
       repository,
-      source: {
-        commit: first.request['base-commit-sha'],
-        branch: sourceBranch,
-      },
-      target: {
-        branch: targetBranch!,
-      },
+      source: { commit: first.request['base-commit-sha'], branch: sourceBranch },
+      target: { branch: targetBranch! },
       author,
-      title: combinedTitle,
+      title: title,
       description,
       commitMessage: first.request['commit-message'],
       autoComplete: setAutoComplete
