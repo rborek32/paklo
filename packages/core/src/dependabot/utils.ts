@@ -1,4 +1,9 @@
-import type { DependabotDependency, DependabotExistingPrDependency, DependabotPersistedPr } from './job';
+import type {
+  DependabotDependency,
+  DependabotExistingPrDependency,
+  DependabotPackageManager,
+  DependabotPersistedPr,
+} from './job';
 import type { DependabotClosePullRequest, DependabotCreatePullRequest } from './update';
 
 export function isDependencyRemoved(
@@ -75,7 +80,7 @@ export function getPullRequestDescription({
   dependencies,
   maxDescriptionLength,
 }: {
-  packageManager: string;
+  packageManager: DependabotPackageManager;
   body: string | null | undefined;
   dependencies: DependabotDependency[];
   maxDescriptionLength?: number;
