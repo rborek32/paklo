@@ -235,18 +235,18 @@
   ],
   "execution": {
     "Node20_1": {
-      "target": "dist/main/index.cjs"
+      "target": "dist/main/index.mjs"
     },
     "Node24": {
-      "target": "dist/main/index.cjs"
+      "target": "dist/main/index.mjs"
     }
   },
   "postjobexecution": {
     "Node20_1": {
-      "target": "dist/cleanup/index.cjs"
+      "target": "dist/cleanup/index.mjs"
     },
     "Node24": {
-      "target": "dist/cleanup/index.cjs"
+      "target": "dist/cleanup/index.mjs"
     }
   }
 }
