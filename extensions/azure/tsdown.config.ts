@@ -1,4 +1,4 @@
-import { defineConfig, type UserConfig } from 'tsdown';
+import { type UserConfig, defineConfig } from 'tsdown';
 
 const base: UserConfig = {
   format: 'cjs',
