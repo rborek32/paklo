@@ -1,5 +1,6 @@
 import { AzureDevOpsClientWrapper, getPullRequestMetadata } from '@paklo/core/azure/client';
 import type { DependabotPullRequestMetadata } from '@paklo/core/dependabot';
+import { logger } from '@paklo/core/logger';
 import * as tl from 'azure-pipelines-task-lib/task';
 
 import { setupLogging } from '../common';
@@ -70,7 +71,7 @@ async function run() {
     const err = e as Error;
     tl.setResult(tl.TaskResult.Failed, err.message);
     tl.error(`An unhandled exception occurred: ${e}`);
-    console.debug(e);
+    logger.debug(e);
   }
 }
 

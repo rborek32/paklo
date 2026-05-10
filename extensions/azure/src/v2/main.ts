@@ -5,6 +5,7 @@ import {
   DEPENDABOT_DEFAULT_AUTHOR_NAME,
   type GitAuthor,
 } from '@paklo/core/dependabot';
+import { logger } from '@paklo/core/logger';
 import type { SecretMasker } from '@paklo/core/runner';
 import * as tl from 'azure-pipelines-task-lib/task';
 
@@ -96,7 +97,7 @@ async function run() {
     const err = e as Error;
     tl.setResult(tl.TaskResult.Failed, err.message);
     tl.error(`An unhandled exception occurred: ${e}`);
-    console.debug(e); // Dump the stack trace to help with debugging
+    logger.debug(e); // Dump the stack trace to help with debugging
   } finally {
   }
 }

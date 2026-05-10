@@ -1,6 +1,7 @@
 import { type AzureDevOpsRepositoryUrl, extractRepositoryUrl } from '@paklo/core/azure';
 import { type AzdoPullRequestMergeStrategy } from '@paklo/core/azure/client';
 import { DEFAULT_EXPERIMENTS, type DependabotExperiments, parseExperiments } from '@paklo/core/dependabot';
+import { logger } from '@paklo/core/logger';
 import * as tl from 'azure-pipelines-task-lib/task';
 
 import { getAzureDevOpsAccessToken, setSecrets } from '../common';
@@ -106,7 +107,7 @@ export function getTaskInputs(): TaskInputs {
     experiments = DEFAULT_EXPERIMENTS;
     tl.debug('No experiments provided; Using default experiments.');
   }
-  console.log('Experiments:', experiments);
+  logger.info('Experiments:', experiments);
 
   const debug: boolean = Boolean(tl.getVariable('System.Debug')?.match(/true/i));
   const secrets: boolean = Boolean(tl.getVariable('System.Secrets')?.match(/true/i));

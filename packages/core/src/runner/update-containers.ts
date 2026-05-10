@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 
+import { logger } from '@/logger';
+
 // Code below is borrowed and adapted from dependabot-action
 
 export function getImageName(dockerfileName: string): string {
@@ -63,7 +65,7 @@ fs.writeFile(
   JSON.stringify(manifest, null, 2),
   (err) => {
     if (err) {
-      console.error(err);
+      logger.error(err);
     }
   },
 );

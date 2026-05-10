@@ -1,3 +1,5 @@
+import { logger } from '@/logger';
+
 import { PROXY_IMAGE_NAME, updaterImageName } from './docker-tags';
 import { ImageService } from './image-service';
 
@@ -9,7 +11,7 @@ export async function run(packageManager: string): Promise<void> {
 }
 
 if (process.argv.length < 3) {
-  console.error('Usage: pnpm fetch-images <package-manager>');
+  logger.error('Usage: pnpm fetch-images <package-manager>');
   process.exit(1);
 }
 
