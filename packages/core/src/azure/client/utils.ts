@@ -107,7 +107,7 @@ export type DependabotPullRequestMetadataInput = AzdoPrExtractedWithProperties &
   targetRefName?: string | null;
 };
 
-export function getDependabotPullRequestMetadata(
+export function getPullRequestMetadata(
   input: DependabotPullRequestMetadataInput,
 ): DependabotPullRequestMetadata {
   const hasDependencies = input.properties?.some((property) => property.name === PR_PROPERTY_DEPENDABOT_DEPENDENCIES);

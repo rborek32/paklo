@@ -1,4 +1,4 @@
-import { AzureDevOpsClientWrapper, getDependabotPullRequestMetadata } from '@paklo/core/azure/client';
+import { AzureDevOpsClientWrapper, getPullRequestMetadata } from '@paklo/core/azure/client';
 import type { DependabotPullRequestMetadata } from '@paklo/core/dependabot';
 import * as tl from 'azure-pipelines-task-lib/task';
 
@@ -49,7 +49,7 @@ async function run() {
       throw new Error(`Properties for pull request '${pullRequestId}' were not found.`);
     }
 
-    const metadata = getDependabotPullRequestMetadata({
+    const metadata = getPullRequestMetadata({
       pullRequestId,
       properties,
       description: pullRequest.description,

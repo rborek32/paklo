@@ -11,7 +11,7 @@ import {
 import type { AzdoPrExtractedWithProperties } from './types';
 import {
   buildPullRequestProperties,
-  getDependabotPullRequestMetadata,
+  getPullRequestMetadata,
   getPullRequestDependencyGroupName,
   getPullRequestForDependencyNames,
   parsePullRequestProperties,
@@ -183,9 +183,9 @@ describe('parsePullRequestProperties', () => {
   });
 });
 
-describe('getDependabotPullRequestMetadata', () => {
+describe('getPullRequestMetadata', () => {
   it('builds fetch-metadata-shaped values from persisted pull request properties', () => {
-    const metadata = getDependabotPullRequestMetadata({
+    const metadata = getPullRequestMetadata({
       pullRequestId: 123,
       targetRefName: 'refs/heads/main',
       description: 'Bumps lodash.\n\nMaintainer changes',
@@ -267,7 +267,7 @@ describe('getDependabotPullRequestMetadata', () => {
   });
 
   it('maps stored package managers back to Dependabot config ecosystem names', () => {
-    const metadata = getDependabotPullRequestMetadata({
+    const metadata = getPullRequestMetadata({
       pullRequestId: 123,
       properties: [
         { name: PR_PROPERTY_DEPENDABOT_PACKAGE_MANAGERS, value: JSON.stringify(['go_modules']) },
@@ -284,7 +284,7 @@ describe('getDependabotPullRequestMetadata', () => {
   });
 
   it('returns null update type when versions are missing or not semver-like', () => {
-    const metadata = getDependabotPullRequestMetadata({
+    const metadata = getPullRequestMetadata({
       pullRequestId: 123,
       properties: [
         { name: PR_PROPERTY_DEPENDABOT_PACKAGE_MANAGERS, value: JSON.stringify(['docker']) },
@@ -309,7 +309,7 @@ describe('getDependabotPullRequestMetadata', () => {
 
   it('throws a clear error when pull request metadata is missing', () => {
     expect(() =>
-      getDependabotPullRequestMetadata({
+      getPullRequestMetadata({
         pullRequestId: 123,
         properties: [],
       }),

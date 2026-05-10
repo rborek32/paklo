@@ -1,7 +1,7 @@
 import { stdout } from 'node:process';
 
 import { extractRepositoryUrl } from '@paklo/core/azure';
-import { AzureDevOpsClientWrapper, getDependabotPullRequestMetadata } from '@paklo/core/azure/client';
+import { AzureDevOpsClientWrapper, getPullRequestMetadata } from '@paklo/core/azure/client';
 import { Command, Option } from 'commander';
 import { z } from 'zod';
 
@@ -40,7 +40,7 @@ async function handler({ options, error }: HandlerOptions<Options>) {
       return;
     }
 
-    const metadata = getDependabotPullRequestMetadata({
+    const metadata = getPullRequestMetadata({
       pullRequestId,
       properties,
       description: pullRequest.description,
