@@ -79,13 +79,6 @@ Dependabot uses Docker containers, which may take time to install if not already
 The extension also includes `DependabotFetchMetadata@1`, a task for reading metadata from a pull request created by the main Dependabot task. It is intended to run inside a pull request validation pipeline.
 
 ```yaml
-trigger: none
-
-pr:
-  branches:
-    include:
-      - '*'
-
 steps:
   - task: DependabotFetchMetadata@1
     name: metadata
