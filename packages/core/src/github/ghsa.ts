@@ -85,6 +85,14 @@ export type Package = z.infer<typeof PackageSchema>;
 export const SecurityAdvisoryIdentifierSchema = z.enum(['CVE', 'GHSA']);
 export type SecurityAdvisoryIdentifierType = z.infer<typeof SecurityAdvisoryIdentifierSchema>;
 
+export const SecurityAdvisoryIdentifiersSchema = z
+  .object({
+    type: z.union([SecurityAdvisoryIdentifierSchema, z.string()]),
+    value: z.string(),
+  })
+  .array();
+export type SecurityAdvisoryIdentifier = z.infer<typeof SecurityAdvisoryIdentifiersSchema>[number];
+
 export const SecurityAdvisorySeveritySchema = z.enum(['LOW', 'MODERATE', 'HIGH', 'CRITICAL']);
 export type SecurityAdvisorySeverity = z.infer<typeof SecurityAdvisorySeveritySchema>;
 
@@ -101,12 +109,7 @@ const CvssSchema = z.object({
 type Cvss = z.infer<typeof CvssSchema>;
 
 export const SecurityAdvisorySchema = z.object({
-  identifiers: z
-    .object({
-      type: z.union([SecurityAdvisoryIdentifierSchema, z.string()]),
-      value: z.string(),
-    })
-    .array(),
+  identifiers: SecurityAdvisoryIdentifiersSchema,
   severity: SecurityAdvisorySeveritySchema.nullish(),
   summary: z.string(),
   description: z.string().nullish(),
