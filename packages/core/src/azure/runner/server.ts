@@ -340,7 +340,7 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
           labels: effective.labels?.map((label) => label?.trim()) || [],
           workItems: effective.milestone ? [effective.milestone] : [],
           changes: changedFiles,
-          properties: buildPullRequestProperties(packageManager, persisted),
+          properties: buildPullRequestProperties([packageManager], persisted),
         });
 
         // Auto-approve the pull request, if required

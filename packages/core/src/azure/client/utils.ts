@@ -25,12 +25,10 @@ import {
 import type { AzdoFileChange, AzdoPrExtractedWithProperties, AzdoVersionControlChangeType } from './types';
 
 export function buildPullRequestProperties(
-  packageManager: DependabotPackageManager | DependabotPackageManager[],
+  packageManagers: DependabotPackageManager[],
   dependencies: DependabotPersistedPr,
   multiEcosystemGroupName?: string,
 ) {
-  const packageManagers = [...new Set(Array.isArray(packageManager) ? packageManager : [packageManager])];
-
   return [
     { name: PR_PROPERTY_DEPENDABOT_PACKAGE_MANAGERS, value: JSON.stringify(packageManagers) },
     ...(multiEcosystemGroupName

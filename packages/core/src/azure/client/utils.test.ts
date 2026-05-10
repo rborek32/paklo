@@ -588,7 +588,7 @@ describe('getPersistedPr and buildPullRequestProperties', () => {
     expect(persisted.dependencies[0]!['previous-version']).toBe('4.17.20');
 
     // Serialize to properties
-    const properties = buildPullRequestProperties('npm_and_yarn', persisted);
+    const properties = buildPullRequestProperties(['npm_and_yarn'], persisted);
     const serialized = JSON.parse(properties.find((p) => p.name === PR_PROPERTY_DEPENDABOT_DEPENDENCIES)!.value);
     expect(serialized).not.toHaveProperty('pr-number');
 
@@ -621,17 +621,6 @@ describe('getPersistedPr and buildPullRequestProperties', () => {
     expect(
       properties.find((property) => property.name === PR_PROPERTY_DEPENDABOT_MULTI_ECOSYSTEM_GROUP_NAME)?.value,
     ).toBe('infrastructure');
-    expect(properties.find((property) => property.name === PR_PROPERTY_DEPENDABOT_PACKAGE_MANAGER)).toBeUndefined();
-  });
-
-  it('writes Dependabot.PackageManagers even when only one package manager is present', () => {
-    const properties = buildPullRequestProperties('docker', {
-      dependencies: [],
-    });
-
-    expect(properties.find((property) => property.name === PR_PROPERTY_DEPENDABOT_PACKAGE_MANAGERS)?.value).toBe(
-      JSON.stringify(['docker']),
-    );
     expect(properties.find((property) => property.name === PR_PROPERTY_DEPENDABOT_PACKAGE_MANAGER)).toBeUndefined();
   });
 });
