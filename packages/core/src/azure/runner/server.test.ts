@@ -435,7 +435,7 @@ describe('AzureLocalDependabotServer', () => {
       expect(authorClient.createPullRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'chore(deps): Bump the "infrastructure" group with 2 updates across multiple ecosystems',
-          commitMessage: 'Update docker dependency',
+          commitMessage: expect.stringContaining('updated-dependencies:'),
           description: 'Docker body\n\nTerraform body',
           source: expect.objectContaining({
             branch: expect.stringMatching(/^dependabot-infrastructure-[a-f0-9]{10}$/),
@@ -445,6 +445,9 @@ describe('AzureLocalDependabotServer', () => {
             { name: PR_PROPERTY_DEPENDABOT_MULTI_ECOSYSTEM_GROUP_NAME, value: 'infrastructure' },
           ]),
         }),
+      );
+      expect(vi.mocked(authorClient.createPullRequest).mock.calls[0]![0].commitMessage).toContain(
+        "dependency-group: 'infrastructure'",
       );
     });
 

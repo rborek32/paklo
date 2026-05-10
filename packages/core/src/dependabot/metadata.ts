@@ -3,7 +3,12 @@ import ky from 'ky';
 import * as semver from 'semver';
 
 import type { DependabotPackageEcosystem, DependabotUpdateType } from './config';
-import type { DependabotExistingGroupPr, DependabotExistingPr, DependabotPackageManager } from './job';
+import type {
+  DependabotDependency,
+  DependabotExistingGroupPr,
+  DependabotExistingPr,
+  DependabotPackageManager,
+} from './job';
 import { mapPackageManagerToPackageEcosystem } from './job-builder';
 
 export type DependabotPullRequestUpdatedDependency = {
@@ -47,6 +52,40 @@ export type CompatibilityScoreLookup = (
   previousVersion: string,
   newVersion: string,
 ) => Promise<number>;
+
+const PULL_REQUEST_COMMIT_METADATA_PATTERN = /^---\r?\n(?<metadata>[\s\S]*?)\r?\n^\.\.\.\s*(?:\r?\n|$)/m;
+
+export function hasPullRequestCommitMetadata(message: string | null | undefined): boolean {
+  return PULL_REQUEST_COMMIT_METADATA_PATTERN.test(message ?? '');
+}
+
+export function getPullRequestCommitMetadataFooter(
+  dependencies: DependabotDependency[],
+  dependencyGroupName?: string | null,
+): string {
+  if (dependencies.length === 0) return '';
+
+  const metadata = {
+    'updated-dependencies': dependencies.map((dependency) => {
+      const updateType = getUpdateType(dependency['previous-version'], dependency.version);
+      return {
+        'dependency-name': dependency.name,
+        'dependency-version': dependency.version ?? '',
+        'dependency-type': getDependencyType(dependency),
+        ...(updateType ? { 'update-type': updateType } : {}),
+        ...(dependencyGroupName ? { 'dependency-group': dependencyGroupName } : {}),
+      };
+    }),
+  };
+
+  return `\n\n---\n${yaml.dump(metadata, {
+    lineWidth: -1,
+    noRefs: true,
+    sortKeys: false,
+    forceQuotes: true,
+    quotingType: "'",
+  })}...\n`;
+}
 
 export async function extractPullRequestMetadata(
   description: string | null | undefined,
@@ -114,7 +153,7 @@ export async function extractPullRequestMetadata(
 }
 
 function getDependencyTypesByName(commitMessage: string | null | undefined): Map<string, string[]> {
-  const fragment = commitMessage?.match(/^---\r?\n(?<metadata>[\s\S]*?)\r?\n^\.\.\.\s*(?:\r?\n|$)/m)?.groups?.metadata;
+  const fragment = commitMessage?.match(PULL_REQUEST_COMMIT_METADATA_PATTERN)?.groups?.metadata;
   if (!fragment) return new Map();
 
   let metadata: unknown;
@@ -154,7 +193,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function getUpdateType(
+export function getDependencyType(
+  dependency: DependabotDependency,
+): 'direct:production' | 'direct:development' | 'indirect' {
+  const requirements = dependency.requirements ?? dependency['previous-requirements'] ?? [];
+  if (requirements.length === 0) return 'indirect';
+
+  const groups = requirements.flatMap((requirement) => requirement.groups ?? []);
+  if (groups.some(isDevelopmentRequirementGroup)) return 'direct:development';
+
+  return 'direct:production';
+}
+
+function isDevelopmentRequirementGroup(group: string): boolean {
+  const normalized = group.toLocaleLowerCase().replace(/[^a-z0-9]/g, '');
+  return ['dev', 'develop', 'development', 'devdependencies', 'test', 'tests'].includes(normalized);
+}
+
+export function getUpdateType(
   previousVersion: string | null | undefined,
   newVersion: string | null | undefined,
 ): DependabotUpdateType | null {

@@ -4,6 +4,7 @@ import type {
   DependabotPackageManager,
   DependabotPersistedPr,
 } from './job';
+import { getPullRequestCommitMetadataFooter, hasPullRequestCommitMetadata } from './metadata';
 import type { DependabotClosePullRequest, DependabotCreatePullRequest } from './update';
 
 export function isDependencyRemoved(
@@ -73,6 +74,21 @@ export function getPersistedPr(data: DependabotCreatePullRequest): DependabotPer
       'directory': dep.directory,
     })),
   };
+}
+
+export function getPullRequestCommitMessage({
+  message,
+  dependencies,
+  dependencyGroupName,
+}: {
+  message: string;
+  dependencies: DependabotDependency[];
+  dependencyGroupName?: string | null;
+}): string {
+  if (hasPullRequestCommitMetadata(message)) return message;
+
+  const footer = getPullRequestCommitMetadataFooter(dependencies, dependencyGroupName);
+  return footer ? `${message.trimEnd()}${footer}` : message;
 }
 
 export function getPullRequestDescription({

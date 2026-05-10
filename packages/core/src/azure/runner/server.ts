@@ -19,6 +19,7 @@ import {
   getEffectiveUpdateSettings,
   getPersistedPr,
   getPullRequestCloseReason,
+  getPullRequestCommitMessage,
   getPullRequestDescription,
   shouldSupersede,
 } from '@/dependabot';
@@ -172,7 +173,11 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
       author,
       title: title,
       description,
-      commitMessage: first.request['commit-message'],
+      commitMessage: getPullRequestCommitMessage({
+        message: first.request['commit-message'],
+        dependencies: allDependencies,
+        dependencyGroupName,
+      }),
       autoComplete: setAutoComplete
         ? {
             ignorePolicyConfigIds: autoCompleteIgnoreConfigIds,
@@ -329,7 +334,11 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
             dependencies: data.dependencies,
             maxDescriptionLength: PR_DESCRIPTION_MAX_LENGTH,
           }),
-          commitMessage: data['commit-message'],
+          commitMessage: getPullRequestCommitMessage({
+            message: data['commit-message'],
+            dependencies: data.dependencies,
+            dependencyGroupName: data['dependency-group']?.name,
+          }),
           autoComplete: setAutoComplete
             ? {
                 ignorePolicyConfigIds: autoCompleteIgnoreConfigIds,

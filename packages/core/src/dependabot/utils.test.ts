@@ -1,7 +1,75 @@
 import { describe, expect, it } from 'vitest';
 
-import type { DependabotPersistedPr } from './job';
-import { shouldSupersede } from './utils';
+import type { DependabotDependency, DependabotPersistedPr } from './job';
+import { getPullRequestCommitMessage, shouldSupersede } from './utils';
+
+describe('getPullRequestCommitMessage', () => {
+  it('adds Dependabot metadata footer', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        'name': 'turbo',
+        'previous-version': '2.9.8',
+        'version': '2.9.9',
+        'requirements': [{ file: 'package.json', groups: ['devDependencies'], requirement: '^2.9.9' }],
+      },
+      {
+        'name': 'hono',
+        'previous-version': '4.12.16',
+        'version': '4.12.17',
+        'requirements': [{ file: 'package.json', groups: ['dependencies'], requirement: '^4.12.17' }],
+      },
+      {
+        'name': 'transitive-only',
+        'previous-version': '1.0.0',
+        'version': '1.1.0',
+        'requirements': [],
+      },
+    ];
+
+    const message = getPullRequestCommitMessage({
+      message: 'Bump dependencies\n\nOld details',
+      dependencies,
+      dependencyGroupName: 'all-npm-minor-updates',
+    });
+
+    expect(message).toContain('Bump dependencies\n\nOld details');
+    expect(message).toContain('---\nupdated-dependencies:');
+    expect(message).toContain("dependency-name: 'turbo'");
+    expect(message).toContain("dependency-type: 'direct:development'");
+    expect(message).toContain("dependency-name: 'hono'");
+    expect(message).toContain("dependency-type: 'direct:production'");
+    expect(message).toContain("dependency-name: 'transitive-only'");
+    expect(message).toContain("dependency-type: 'indirect'");
+    expect(message).toContain("dependency-group: 'all-npm-minor-updates'");
+    expect(message).toContain('...\n');
+  });
+
+  it('keeps an existing Dependabot metadata footer', () => {
+    const dependencies: DependabotDependency[] = [
+      {
+        'name': 'zod',
+        'previous-version': '4.4.2',
+        'version': '4.4.3',
+        'requirements': [{ file: 'package.json', groups: ['dependencies'], requirement: '^4.4.3' }],
+      },
+    ];
+
+    const existingMessage = `Bump zod
+
+---
+updated-dependencies:
+- dependency-name: old
+  dependency-type: indirect
+...
+`;
+    const message = getPullRequestCommitMessage({
+      message: existingMessage,
+      dependencies,
+    });
+
+    expect(message).toBe(existingMessage);
+  });
+});
 
 describe('shouldSupersede', () => {
   it('returns false when there are no overlapping dependencies', () => {

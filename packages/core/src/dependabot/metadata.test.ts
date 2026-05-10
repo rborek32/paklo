@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { DependabotExistingGroupPr } from './job';
-import { extractPullRequestMetadata } from './metadata';
+import { extractPullRequestMetadata, getDependencyType, getUpdateType } from './metadata';
 
 describe('extractPullRequestMetadata', () => {
   it('builds fetch-metadata-shaped values from persisted pull request metadata', async () => {
@@ -152,5 +152,57 @@ updated-dependencies:
 
     expect(metadata['dependency-type']).toBe('unknown');
     expect(metadata['updated-dependencies-json'][0]!['dependency-type']).toBe('unknown');
+  });
+});
+
+describe('getDependencyType', () => {
+  it('returns direct:development for development requirement groups', () => {
+    expect(
+      getDependencyType({
+        name: 'turbo',
+        requirements: [{ file: 'package.json', groups: ['devDependencies'], requirement: '^2.9.9' }],
+      }),
+    ).toBe('direct:development');
+  });
+
+  it('returns direct:production for direct non-development requirement groups', () => {
+    expect(
+      getDependencyType({
+        name: 'hono',
+        requirements: [{ file: 'package.json', groups: ['dependencies'], requirement: '^4.12.17' }],
+      }),
+    ).toBe('direct:production');
+  });
+
+  it('returns indirect when there are no requirements', () => {
+    expect(
+      getDependencyType({
+        name: 'transitive-only',
+        requirements: [],
+      }),
+    ).toBe('indirect');
+  });
+
+  it('falls back to previous requirements', () => {
+    expect(
+      getDependencyType({
+        'name': 'vitest',
+        'previous-requirements': [{ file: 'package.json', groups: ['dev-dependencies'], requirement: '^4.1.5' }],
+      }),
+    ).toBe('direct:development');
+  });
+});
+
+describe('getUpdateType', () => {
+  it('returns semver-major, semver-minor, and semver-patch update types', () => {
+    expect(getUpdateType('1.2.3', '2.0.0')).toBe('version-update:semver-major');
+    expect(getUpdateType('1.2.3', '1.3.0')).toBe('version-update:semver-minor');
+    expect(getUpdateType('1.2.3', '1.2.4')).toBe('version-update:semver-patch');
+  });
+
+  it('returns null for equal, missing, or non-semver-like versions', () => {
+    expect(getUpdateType('1.2.3', '1.2.3')).toBeNull();
+    expect(getUpdateType(undefined, '1.2.3')).toBeNull();
+    expect(getUpdateType('jammy', 'noble')).toBeNull();
   });
 });
