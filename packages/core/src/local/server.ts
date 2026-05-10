@@ -14,6 +14,7 @@ import {
   type ExecutionUnit,
   type GitAuthor,
 } from '@/dependabot';
+import type { SecurityVulnerability } from '@/github';
 import { logger } from '@/logger';
 
 import { type CreateApiServerAppOptions, type DependabotTokenType, createApiServerApp } from './server-http';
@@ -33,6 +34,8 @@ export type LocalDependabotServerAddOptions = {
   credentialsToken: string;
   /** The credentials associated with the job. */
   credentials: DependabotCredential[];
+  /** The known security vulnerabilities associated with this job. */
+  securityVulnerabilities?: SecurityVulnerability[];
 };
 
 export type AffectedPullRequestIds = {
@@ -46,6 +49,7 @@ export type PendingCreatePullRequest = {
   packageManager: DependabotPackageManager;
   update: DependabotUpdate;
   request: DependabotCreatePullRequest;
+  securityVulnerabilities: SecurityVulnerability[];
 };
 
 export type FinalizeCreateRequestsResult = {
@@ -69,6 +73,7 @@ export abstract class LocalDependabotServer {
   private readonly updates = new Map<string, DependabotUpdate>();
   private readonly jobTokens = new Map<string, string>();
   private readonly credentialTokens = new Map<string, string>();
+  private readonly securityVulnerabilities = new Map<string, SecurityVulnerability[]>();
   private readonly units = new Map<string, ExecutionUnit>();
   private readonly unitJobIds = new Map<ExecutionUnit, string[]>();
   private readonly jobCredentials = new Map<string, DependabotCredential[]>();
@@ -129,19 +134,21 @@ export abstract class LocalDependabotServer {
    * @param value - The dependabot job details.
    */
   add(value: LocalDependabotServerAddOptions) {
-    const { id, unit, update, job, jobToken, credentialsToken, credentials } = value;
+    const { id, unit, update, job, jobToken, credentialsToken, credentials, securityVulnerabilities:vulns } = value;
     const {
       trackedJobs,
       updates,
       jobTokens,
       credentialTokens,
       units,
+      securityVulnerabilities,
       jobCredentials,
       receivedRequests,
       affectedPullRequestIds,
     } = this;
     trackedJobs.set(id, job);
     updates.set(id, update);
+    securityVulnerabilities.set(id, vulns ?? []);
     jobTokens.set(id, jobToken);
     credentialTokens.set(id, credentialsToken);
     if (unit) {
@@ -171,6 +178,10 @@ export abstract class LocalDependabotServer {
    */
   update(id: string): DependabotUpdate | undefined {
     return this.updates.get(id);
+  }
+
+  jobSecurityVulnerabilities(id: string): SecurityVulnerability[] {
+    return this.securityVulnerabilities.get(id) ?? [];
   }
 
   /**
@@ -210,10 +221,17 @@ export abstract class LocalDependabotServer {
     const job = this.trackedJobs.get(id);
     const update = this.updates.get(id);
     const unit = this.units.get(id);
+    const securityVulnerabilities = this.jobSecurityVulnerabilities(id);
     if (!job || !update || unit?.kind !== 'multi-ecosystem') return false;
 
     const pending = this.pendingCreatePullRequests.get(unit.groupname) ?? [];
-    pending.push({ id, packageManager: job['package-manager'], update, request });
+    pending.push({
+      id,
+      packageManager: job['package-manager'],
+      update,
+      request,
+      securityVulnerabilities,
+    });
     this.pendingCreatePullRequests.set(unit.groupname, pending);
     return true;
   }

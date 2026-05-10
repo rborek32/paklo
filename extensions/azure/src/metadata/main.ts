@@ -18,7 +18,6 @@ const outputVariableNames: Record<keyof DependabotPullRequestMetadata, string> =
   'compatibility-score': 'compatibilityScore',
   'maintainer-changes': 'maintainerChanges',
   'dependency-group': 'dependencyGroup',
-  'alert-state': 'alertState',
   'ghsa-id': 'ghsaId',
   'cvss': 'cvss',
 };

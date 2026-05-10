@@ -30,6 +30,16 @@ describe('getPullRequestCommitMessage', () => {
       message: 'Bump dependencies\n\nOld details',
       dependencies,
       dependencyGroupName: 'all-npm-minor-updates',
+      securityVulnerabilities: [
+        {
+          package: { name: 'hono', version: '4.12.16' },
+          vulnerableVersionRange: '< 4.12.17',
+          advisory: {
+            identifiers: [{ type: 'GHSA', value: 'GHSA-1111-2222-3333' }],
+            cvss: { score: 7.5 },
+          },
+        },
+      ],
     });
 
     expect(message).toContain('Bump dependencies\n\nOld details');
@@ -38,6 +48,8 @@ describe('getPullRequestCommitMessage', () => {
     expect(message).toContain("dependency-type: 'direct:development'");
     expect(message).toContain("dependency-name: 'hono'");
     expect(message).toContain("dependency-type: 'direct:production'");
+    expect(message).toContain("ghsa-id: 'GHSA-1111-2222-3333'");
+    expect(message).toContain('cvss: 7.5');
     expect(message).toContain("dependency-name: 'transitive-only'");
     expect(message).toContain("dependency-type: 'indirect'");
     expect(message).toContain("dependency-group: 'all-npm-minor-updates'");

@@ -90,10 +90,6 @@
       "description": "The dependency group that the PR is associated with."
     },
     {
-      "name": "alertState",
-      "description": "The alert state, when known."
-    },
-    {
       "name": "ghsaId",
       "description": "The GHSA ID, when known."
     },

@@ -4,7 +4,11 @@ import type {
   DependabotPackageManager,
   DependabotPersistedPr,
 } from './job';
-import { getPullRequestCommitMetadataFooter, hasPullRequestCommitMetadata } from './metadata';
+import {
+  type DependabotPullRequestSecurityVulnerability,
+  getPullRequestCommitMetadataFooter,
+  hasPullRequestCommitMetadata,
+} from './metadata';
 import type { DependabotClosePullRequest, DependabotCreatePullRequest } from './update';
 
 export function isDependencyRemoved(
@@ -80,14 +84,16 @@ export function getPullRequestCommitMessage({
   message,
   dependencies,
   dependencyGroupName,
+  securityVulnerabilities,
 }: {
   message: string;
   dependencies: DependabotDependency[];
   dependencyGroupName?: string | null;
+  securityVulnerabilities?: DependabotPullRequestSecurityVulnerability[];
 }): string {
   if (hasPullRequestCommitMetadata(message)) return message;
 
-  const footer = getPullRequestCommitMetadataFooter(dependencies, dependencyGroupName);
+  const footer = getPullRequestCommitMetadataFooter(dependencies, dependencyGroupName, securityVulnerabilities);
   return footer ? `${message.trimEnd()}${footer}` : message;
 }
 

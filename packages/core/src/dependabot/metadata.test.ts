@@ -41,6 +41,8 @@ updated-dependencies:
 - dependency-name: lodash
   dependency-type: direct:production
   dependency-version: 4.17.21
+  ghsa-id: GHSA-1111-2222-3333
+  cvss: 7.5
 - dependency-name: express
   dependency-type: direct:development
   dependency-version: 4.18.2
@@ -60,9 +62,8 @@ updated-dependencies:
       'compatibility-score': 89,
       'maintainer-changes': true,
       'dependency-group': 'frontend',
-      'alert-state': '',
-      'ghsa-id': '',
-      'cvss': 0,
+      'ghsa-id': 'GHSA-1111-2222-3333',
+      'cvss': 7.5,
     });
     expect(metadata['updated-dependencies-json']).toEqual([
       {
@@ -77,9 +78,8 @@ updated-dependencies:
         'compatibility-score': 89,
         'maintainer-changes': true,
         'dependency-group': 'frontend',
-        'alert-state': '',
-        'ghsa-id': '',
-        'cvss': 0,
+        'ghsa-id': 'GHSA-1111-2222-3333',
+        'cvss': 7.5,
       },
       {
         'dependency-name': 'express',
@@ -93,7 +93,6 @@ updated-dependencies:
         'compatibility-score': 76,
         'maintainer-changes': true,
         'dependency-group': 'frontend',
-        'alert-state': '',
         'ghsa-id': '',
         'cvss': 0,
       },

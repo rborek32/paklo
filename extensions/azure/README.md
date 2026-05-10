@@ -116,11 +116,10 @@ The task requires `System.PullRequest.PullRequestId`, so it fails when it is not
 | compatibilityScore      | The compatibility score, when known.                                |
 | maintainerChanges       | Whether the pull request body contains `Maintainer changes`.        |
 | dependencyGroup         | The dependency group that the PR is associated with.                |
-| alertState              | The alert state, when known.                                        |
 | ghsaId                  | The GHSA ID, when known.                                            |
 | cvss                    | The CVSS value, when known.                                         |
 
-Some values are currently best-effort or unavailable from the persisted Azure metadata, including `dependencyType` and security advisory fields such as `alertState`, `ghsaId`, and `cvss`. For older pull requests created before previous versions were persisted, `previousVersion` may be empty, `updateType` may be `null`, and `compatibilityScore` may be `0`.
+Some values are currently best-effort or unavailable from the persisted Azure metadata, including security advisory fields such as `ghsaId` and `cvss`. For older pull requests created before previous versions were persisted, `previousVersion` may be empty, `updateType` may be `null`, and `compatibilityScore` may be `0`.
 
 ## Advanced
 

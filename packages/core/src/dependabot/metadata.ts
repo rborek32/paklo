@@ -23,7 +23,6 @@ export type DependabotPullRequestUpdatedDependency = {
   'compatibility-score': number;
   'maintainer-changes': boolean;
   'dependency-group': string;
-  'alert-state': string;
   'ghsa-id': string;
   'cvss': number;
 };
@@ -41,9 +40,17 @@ export type DependabotPullRequestMetadata = {
   'compatibility-score': number;
   'maintainer-changes': boolean;
   'dependency-group': string;
-  'alert-state': string;
   'ghsa-id': string;
   'cvss': number;
+};
+
+export type DependabotPullRequestSecurityVulnerability = {
+  package: { name: string; version?: string | null };
+  vulnerableVersionRange: string;
+  advisory: {
+    identifiers: { type: string; value: string }[];
+    cvss?: { score: number } | null;
+  };
 };
 
 export type CompatibilityScoreLookup = (
@@ -62,18 +69,22 @@ export function hasPullRequestCommitMetadata(message: string | null | undefined)
 export function getPullRequestCommitMetadataFooter(
   dependencies: DependabotDependency[],
   dependencyGroupName?: string | null,
+  securityVulnerabilities: DependabotPullRequestSecurityVulnerability[] = [],
 ): string {
   if (dependencies.length === 0) return '';
 
   const metadata = {
     'updated-dependencies': dependencies.map((dependency) => {
       const updateType = getUpdateType(dependency['previous-version'], dependency.version);
+      const advisory = getDependencyAdvisory(dependency, securityVulnerabilities);
       return {
         'dependency-name': dependency.name,
         'dependency-version': dependency.version ?? '',
         'dependency-type': getDependencyType(dependency),
         ...(updateType ? { 'update-type': updateType } : {}),
         ...(dependencyGroupName ? { 'dependency-group': dependencyGroupName } : {}),
+        ...(advisory?.ghsaId ? { 'ghsa-id': advisory.ghsaId } : {}),
+        ...(advisory?.cvss ? { cvss: advisory.cvss } : {}),
       };
     }),
   };
@@ -98,16 +109,16 @@ export async function extractPullRequestMetadata(
   const packageEcosystem = mapPackageManagerToPackageEcosystem(packageManagers[0]!);
   const dependencyGroup = 'dependency-group-name' in parsed ? (parsed['dependency-group-name'] ?? '') : '';
   const maintainerChanges = /Maintainer changes/m.test(description ?? '');
-  const dependencyTypesByName = getDependencyTypesByName(commitMessage);
+  const commitMetadata = getCommitMetadataDependencies(commitMessage);
 
   const updatedDependencies = await Promise.all(
     parsed.dependencies.map(async (dependency): Promise<DependabotPullRequestUpdatedDependency> => {
-      const dependencyType = dependencyTypesByName.get(dependency['dependency-name'])?.shift() ?? 'unknown';
+      const meta = commitMetadata.get(dependency['dependency-name'])?.shift();
       const previousVersion = dependency['previous-version'] ?? '';
       const newVersion = dependency['dependency-version'] ?? '';
       return {
         'dependency-name': dependency['dependency-name'],
-        'dependency-type': dependencyType,
+        'dependency-type': meta?.dependencyType ?? 'unknown',
         'update-type': getUpdateType(previousVersion, newVersion),
         'directory': dependency.directory ?? '',
         'package-ecosystem': packageEcosystem,
@@ -122,9 +133,8 @@ export async function extractPullRequestMetadata(
         ),
         'maintainer-changes': maintainerChanges,
         'dependency-group': dependencyGroup,
-        'alert-state': '',
-        'ghsa-id': '',
-        'cvss': 0,
+        'ghsa-id': meta?.ghsaId ?? '',
+        'cvss': meta?.cvss ?? 0,
       };
     }),
   );
@@ -146,13 +156,20 @@ export async function extractPullRequestMetadata(
     'compatibility-score': firstDependency['compatibility-score'],
     'maintainer-changes': maintainerChanges,
     'dependency-group': dependencyGroup,
-    'alert-state': '', // TODO: populate
-    'ghsa-id': '', // TODO: populate
-    'cvss': 0, // TODO: populate
+    'ghsa-id': firstDependency['ghsa-id'],
+    'cvss': firstDependency['cvss'],
   };
 }
 
-function getDependencyTypesByName(commitMessage: string | null | undefined): Map<string, string[]> {
+type CommitDependencyMetadata = {
+  dependencyType?: string;
+  ghsaId?: string;
+  cvss?: number;
+};
+
+function getCommitMetadataDependencies(
+  commitMessage: string | null | undefined,
+): Map<string, CommitDependencyMetadata[]> {
   const fragment = commitMessage?.match(PULL_REQUEST_COMMIT_METADATA_PATTERN)?.groups?.metadata;
   if (!fragment) return new Map();
 
@@ -164,20 +181,33 @@ function getDependencyTypesByName(commitMessage: string | null | undefined): Map
   }
   if (!isRecord(metadata) || !Array.isArray(metadata['updated-dependencies'])) return new Map();
 
-  const dependencyTypes = new Map<string, string[]>();
+  const dependencies = new Map<string, CommitDependencyMetadata[]>();
   for (const dependency of metadata['updated-dependencies']) {
     if (!isRecord(dependency)) continue;
 
     const name = dependency['dependency-name'];
-    const type = dependency['dependency-type'];
-    if (typeof name !== 'string' || typeof type !== 'string' || !type) continue;
+    if (typeof name !== 'string') continue;
 
-    const types = dependencyTypes.get(name) ?? [];
-    types.push(type);
-    dependencyTypes.set(name, types);
+    const entry: CommitDependencyMetadata = {};
+    if (typeof dependency['dependency-type'] === 'string' && dependency['dependency-type']) {
+      entry.dependencyType = dependency['dependency-type'];
+    }
+    if (typeof dependency['ghsa-id'] === 'string' && dependency['ghsa-id']) {
+      entry.ghsaId = dependency['ghsa-id'];
+    }
+    if (typeof dependency['cvss'] === 'number') {
+      entry.cvss = dependency['cvss'];
+    } else if (typeof dependency['cvss'] === 'string') {
+      const cvss = Number.parseFloat(dependency['cvss']);
+      if (!Number.isNaN(cvss)) entry.cvss = cvss;
+    }
+
+    const entries = dependencies.get(name) ?? [];
+    entries.push(entry);
+    dependencies.set(name, entries);
   }
 
-  return dependencyTypes;
+  return dependencies;
 }
 
 function getHighestDependencyType(deps: DependabotPullRequestUpdatedDependency[]): string {
@@ -203,6 +233,37 @@ export function getDependencyType(
   if (groups.some(isDevelopmentRequirementGroup)) return 'direct:development';
 
   return 'direct:production';
+}
+
+function getDependencyAdvisory(
+  dependency: DependabotDependency,
+  securityVulnerabilities: DependabotPullRequestSecurityVulnerability[],
+): { ghsaId: string; cvss: number } | undefined {
+  const previousVersion = dependency['previous-version'];
+  const matches = securityVulnerabilities
+    .filter((vulnerability) => vulnerability.package.name === dependency.name)
+    .filter((vulnerability) => isVersionInRange(previousVersion, vulnerability.vulnerableVersionRange));
+  const highest = matches.sort((a, b) => getCvss(b) - getCvss(a))[0];
+  if (!highest) return undefined;
+
+  const ghsaId = highest.advisory.identifiers.find((identifier) => identifier.type === 'GHSA')?.value ?? '';
+  return { ghsaId, cvss: getCvss(highest) };
+}
+
+function getCvss(vulnerability: DependabotPullRequestSecurityVulnerability): number {
+  return vulnerability.advisory.cvss?.score ?? 0;
+}
+
+function isVersionInRange(version: string | null | undefined, range: string): boolean {
+  if (!version) return true;
+  try {
+    return range
+      .split(',')
+      .map((part) => part.trim())
+      .every((part) => semver.satisfies(version, part));
+  } catch {
+    return false;
+  }
 }
 
 function isDevelopmentRequirementGroup(group: string): boolean {

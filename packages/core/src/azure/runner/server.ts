@@ -77,6 +77,7 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
 
     const first = pending[0]!;
     const allDependencies = pending.flatMap((entry) => entry.request.dependencies);
+    const allSecurityVulnerabilities = pending.flatMap((entry) => entry.securityVulnerabilities);
     const allPersistedDependencies = pending.flatMap((entry) => getPersistedPr(entry.request).dependencies);
     const changedFilesByPath = new Map<string, AzdoFileChange>();
     for (const entry of pending) {
@@ -177,6 +178,7 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
         message: first.request['commit-message'],
         dependencies: allDependencies,
         dependencyGroupName,
+        securityVulnerabilities: allSecurityVulnerabilities,
       }),
       autoComplete: setAutoComplete
         ? {
@@ -338,6 +340,7 @@ export class AzureLocalDependabotServer extends LocalDependabotServer {
             message: data['commit-message'],
             dependencies: data.dependencies,
             dependencyGroupName: data['dependency-group']?.name,
+            securityVulnerabilities: this.jobSecurityVulnerabilities(id),
           }),
           autoComplete: setAutoComplete
             ? {
