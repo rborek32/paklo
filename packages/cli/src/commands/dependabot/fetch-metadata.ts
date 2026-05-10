@@ -40,7 +40,7 @@ async function handler({ options, error }: HandlerOptions<Options>) {
       return;
     }
 
-    const metadata = getPullRequestMetadata({
+    const metadata = await getPullRequestMetadata({
       pullRequestId,
       properties,
       description: pullRequest.description,

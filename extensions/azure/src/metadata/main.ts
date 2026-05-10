@@ -49,7 +49,7 @@ async function run() {
       throw new Error(`Properties for pull request '${pullRequestId}' were not found.`);
     }
 
-    const metadata = getPullRequestMetadata({
+    const metadata = await getPullRequestMetadata({
       pullRequestId,
       properties,
       description: pullRequest.description,

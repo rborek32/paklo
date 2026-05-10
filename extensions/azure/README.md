@@ -118,7 +118,7 @@ The task requires `System.PullRequest.PullRequestId`, so it fails when it is not
 | ghsaId                  | The GHSA ID, when known.                                            |
 | cvss                    | The CVSS value, when known.                                         |
 
-Some values are currently best-effort or unavailable from the persisted Azure metadata, including `dependencyType`, `compatibilityScore`, and security advisory fields such as `alertState`, `ghsaId`, and `cvss`. For older pull requests created before previous versions were persisted, `previousVersion` may be empty and `updateType` may be `null`.
+Some values are currently best-effort or unavailable from the persisted Azure metadata, including `dependencyType` and security advisory fields such as `alertState`, `ghsaId`, and `cvss`. For older pull requests created before previous versions were persisted, `previousVersion` may be empty, `updateType` may be `null`, and `compatibilityScore` may be `0`.
 
 ## Advanced
 

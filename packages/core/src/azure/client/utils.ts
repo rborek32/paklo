@@ -8,12 +8,9 @@ import {
   DependabotPackageManagerSchema,
   type DependabotPersistedPr,
   DependabotPersistedPrSchema,
-  type DependabotPullRequestMetadata,
   type DependabotUpdatePullRequest,
   areEqual,
-  extractPullRequestMetadata,
   getDependencyNames,
-  normalizeBranchName,
 } from '@/dependabot';
 
 import {
@@ -65,7 +62,7 @@ export function getPullRequestDependencyGroupName(pr: AzdoPrExtractedWithPropert
   }
 }
 
-function getPullRequestPackageManagers(pr: AzdoPrExtractedWithProperties): DependabotPackageManager[] {
+export function getPullRequestPackageManagers(pr: AzdoPrExtractedWithProperties): DependabotPackageManager[] {
   const packageManagersValue = pr.properties?.find(
     (property) => property.name === PR_PROPERTY_DEPENDABOT_PACKAGE_MANAGERS,
   )?.value;
@@ -100,26 +97,6 @@ export function parsePullRequestProperties(
   packageManager: DependabotPackageManager,
 ): (DependabotExistingPr | DependabotExistingGroupPr)[] {
   return pullRequests.filter((pr) => filterPullRequestsByPackageManager(pr, packageManager)).map(parsePullRequestProps);
-}
-
-export type DependabotPullRequestMetadataInput = AzdoPrExtractedWithProperties & {
-  description?: string | null;
-  targetRefName?: string | null;
-};
-
-export function getPullRequestMetadata(
-  input: DependabotPullRequestMetadataInput,
-): DependabotPullRequestMetadata {
-  const hasDependencies = input.properties?.some((property) => property.name === PR_PROPERTY_DEPENDABOT_DEPENDENCIES);
-  const packageManagers = getPullRequestPackageManagers(input);
-  if (!hasDependencies || packageManagers.length === 0) {
-    throw new Error(`No Dependabot metadata was found on pull request '${input.pullRequestId}'.`);
-  }
-
-  const parsed = parsePullRequestProps(input);
-  const targetBranch = normalizeBranchName(input.targetRefName ?? undefined) ?? '';
-
-  return extractPullRequestMetadata(input.description, parsed, packageManagers, targetBranch);
 }
 
 export function getPullRequestForDependencyNames(
