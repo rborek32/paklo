@@ -82,14 +82,16 @@ The extension also includes `DependabotFetchMetadata@1`, a task for reading meta
 steps:
   - task: DependabotFetchMetadata@1
     name: metadata
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
 
   - script: |
       echo "Dependencies: $(metadata.dependencyNames)"
       echo "Package ecosystem: $(metadata.packageEcosystem)"
       echo "Update type: $(metadata.updateType)"
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
 ```
 
-The task requires `System.PullRequest.PullRequestId`, so it fails when it is not running in the context of a pull request. Authentication uses the current `SystemVssConnection` by default, or the optional `azureDevOpsServiceConnection` / `azureDevOpsAccessToken` inputs.
+The task requires `System.PullRequest.PullRequestId`, so it fails when it is not running in the context of a pull request. If the pipeline can also run for non-PR reasons, guard the task with `eq(variables['Build.Reason'], 'PullRequest')`. Authentication uses the current `SystemVssConnection` by default, or the optional `azureDevOpsServiceConnection` / `azureDevOpsAccessToken` inputs.
 
 ### Fetch Metadata Parameters
 
