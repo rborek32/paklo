@@ -134,7 +134,7 @@ export abstract class LocalDependabotServer {
    * @param value - The dependabot job details.
    */
   add(value: LocalDependabotServerAddOptions) {
-    const { id, unit, update, job, jobToken, credentialsToken, credentials, securityVulnerabilities:vulns } = value;
+    const { id, unit, update, job, jobToken, credentialsToken, credentials, securityVulnerabilities: vulns } = value;
     const {
       trackedJobs,
       updates,
