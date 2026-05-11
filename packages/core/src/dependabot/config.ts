@@ -168,6 +168,7 @@ export const DependabotPackageEcosystemSchema = z.enum([
   'cargo',
   'composer',
   'conda',
+  'deno',
   'devcontainers',
   'docker',
   'docker-compose',
@@ -277,7 +278,7 @@ export const DependabotMultiEcosystemGroupSchema = z.object({
 export type DependabotMultiEcosystemGroup = z.infer<typeof DependabotMultiEcosystemGroupSchema>;
 
 /* Ecosystems that are currently in beta */
-export const BETA_ECOSYSTEMS: DependabotPackageEcosystem[] = [];
+export const BETA_ECOSYSTEMS: DependabotPackageEcosystem[] = ['deno'];
 
 /**
  * Represents the dependabot.yaml configuration file options.
