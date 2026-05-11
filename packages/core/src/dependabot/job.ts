@@ -132,38 +132,40 @@ export const DependabotExperimentsSchema = z.record(z.string(), z.union([z.strin
 export type DependabotExperiments = z.infer<typeof DependabotExperimentsSchema>;
 
 export const DependabotPackageManagerSchema = z.enum([
+  // alphabetical order
+
+  'bazel',
+  'bun',
   'bundler',
   'cargo',
   'composer',
   'conda',
-  'pub',
+  'deno',
+  'devcontainers',
   'docker',
+  'docker_compose', // ecosystem(s): 'docker-compose',
+  'dotnet_sdk', // ecosystem(s): 'dotnet-sdk'
   'elm',
   'github_actions', // ecosystem(s): 'github-actions'
-  'submodules', // ecosystem(s): 'gitsubmodule'
-  'go_modules', // ecosystem(s): 'gomod'
   'gradle',
-  'maven',
-  'deno',
+  'go_modules', // ecosystem(s): 'gomod'
+  'helm',
   'hex', // ecosystem(s): 'mix'
-  'nuget',
+  'julia',
+  'maven',
+  'nix',
   'npm_and_yarn', // ecosystem(s): 'npm', 'pnpm', 'yarn'
+  'nuget',
+  'opentofu',
   'pip', // ecosystem(s): 'pipenv', 'pip-compile', 'poetry'
+  'pre_commit',
+  'pub',
   'rust_toolchain', // ecosystem(s): 'rust-toolchain'
+  'submodules', // ecosystem(s): 'gitsubmodule'
   'swift',
   'terraform',
-  'devcontainers',
-  'dotnet_sdk', // ecosystem(s): 'dotnet-sdk'
-  'bun',
-  'docker_compose', // ecosystem(s): 'docker-compose',
   'uv',
   'vcpkg',
-  'helm',
-  'julia',
-  'bazel',
-  'opentofu',
-  'pre_commit',
-  'nix',
 ]);
 export type DependabotPackageManager = z.infer<typeof DependabotPackageManagerSchema>;
 
