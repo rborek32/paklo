@@ -1,8 +1,9 @@
 import * as yaml from 'js-yaml';
 import ky from 'ky';
 import * as semver from 'semver';
+import { z } from 'zod';
 
-import type { DependabotPackageEcosystem, DependabotUpdateType } from './config';
+import { type DependabotPackageEcosystem, type DependabotUpdateType, DependabotUpdateTypeSchema } from './config';
 import type {
   DependabotDependency,
   DependabotExistingGroupPr,
@@ -62,6 +63,19 @@ export type CompatibilityScoreLookup = (
 
 const PULL_REQUEST_COMMIT_METADATA_PATTERN = /^---\r?\n(?<metadata>[\s\S]*?)\r?\n^\.\.\.\s*(?:\r?\n|$)/m;
 
+const PullRequestCommitMetadataSchema = z.object({
+  'updated-dependencies': z.unknown().array(),
+});
+const CommitDependencyMetadataSchema = z.object({
+  'dependency-name': z.string().min(1),
+  'dependency-version': z.string().optional(),
+  'dependency-type': z.string().optional(),
+  'update-type': DependabotUpdateTypeSchema.optional(),
+  'dependency-group': z.string().optional(),
+  'ghsa-id': z.string().optional(),
+  'cvss': z.coerce.number().optional(),
+});
+
 export function hasPullRequestCommitMetadata(message: string | null | undefined): boolean {
   return PULL_REQUEST_COMMIT_METADATA_PATTERN.test(message ?? '');
 }
@@ -107,7 +121,6 @@ export async function extractPullRequestMetadata(
   commitMessage?: string | null,
 ): Promise<DependabotPullRequestMetadata> {
   const packageEcosystem = mapPackageManagerToPackageEcosystem(packageManagers[0]!);
-  const dependencyGroup = 'dependency-group-name' in parsed ? (parsed['dependency-group-name'] ?? '') : '';
   const maintainerChanges = /Maintainer changes/m.test(description ?? '');
   const commitMetadata = getCommitMetadataDependencies(commitMessage);
 
@@ -115,11 +128,11 @@ export async function extractPullRequestMetadata(
     parsed.dependencies.map(async (dependency): Promise<DependabotPullRequestUpdatedDependency> => {
       const meta = commitMetadata.get(dependency['dependency-name'])?.shift();
       const previousVersion = dependency['previous-version'] ?? '';
-      const newVersion = dependency['dependency-version'] ?? '';
+      const newVersion = meta?.['dependency-version'] ?? dependency['dependency-version'] ?? '';
       return {
         'dependency-name': dependency['dependency-name'],
-        'dependency-type': meta?.dependencyType ?? 'unknown',
-        'update-type': getUpdateType(previousVersion, newVersion),
+        'dependency-type': meta?.['dependency-type'] ?? 'unknown',
+        'update-type': meta?.['update-type'] ?? getUpdateType(previousVersion, newVersion),
         'directory': dependency.directory ?? '',
         'package-ecosystem': packageEcosystem,
         'target-branch': targetBranch,
@@ -132,8 +145,10 @@ export async function extractPullRequestMetadata(
           newVersion,
         ),
         'maintainer-changes': maintainerChanges,
-        'dependency-group': dependencyGroup,
-        'ghsa-id': meta?.ghsaId ?? '',
+        'dependency-group':
+          meta?.['dependency-group'] ??
+          ('dependency-group-name' in parsed ? (parsed['dependency-group-name'] ?? '') : ''),
+        'ghsa-id': meta?.['ghsa-id'] ?? '',
         'cvss': meta?.cvss ?? 0,
       };
     }),
@@ -155,17 +170,13 @@ export async function extractPullRequestMetadata(
     'new-version': firstDependency['new-version'] ?? '',
     'compatibility-score': firstDependency['compatibility-score'],
     'maintainer-changes': maintainerChanges,
-    'dependency-group': dependencyGroup,
+    'dependency-group': firstDependency['dependency-group'],
     'ghsa-id': firstDependency['ghsa-id'],
     'cvss': firstDependency['cvss'],
   };
 }
 
-type CommitDependencyMetadata = {
-  dependencyType?: string;
-  ghsaId?: string;
-  cvss?: number;
-};
+type CommitDependencyMetadata = z.output<typeof CommitDependencyMetadataSchema>;
 
 function getCommitMetadataDependencies(
   commitMessage: string | null | undefined,
@@ -179,32 +190,17 @@ function getCommitMetadataDependencies(
   } catch {
     return new Map();
   }
-  if (!isRecord(metadata) || !Array.isArray(metadata['updated-dependencies'])) return new Map();
+  const parsed = PullRequestCommitMetadataSchema.safeParse(metadata);
+  if (!parsed.success) return new Map();
 
   const dependencies = new Map<string, CommitDependencyMetadata[]>();
-  for (const dependency of metadata['updated-dependencies']) {
-    if (!isRecord(dependency)) continue;
+  for (const dependency of parsed.data['updated-dependencies']) {
+    const entry = CommitDependencyMetadataSchema.safeParse(dependency);
+    if (!entry.success) continue;
 
-    const name = dependency['dependency-name'];
-    if (typeof name !== 'string') continue;
-
-    const entry: CommitDependencyMetadata = {};
-    if (typeof dependency['dependency-type'] === 'string' && dependency['dependency-type']) {
-      entry.dependencyType = dependency['dependency-type'];
-    }
-    if (typeof dependency['ghsa-id'] === 'string' && dependency['ghsa-id']) {
-      entry.ghsaId = dependency['ghsa-id'];
-    }
-    if (typeof dependency['cvss'] === 'number') {
-      entry.cvss = dependency['cvss'];
-    } else if (typeof dependency['cvss'] === 'string') {
-      const cvss = Number.parseFloat(dependency['cvss']);
-      if (!Number.isNaN(cvss)) entry.cvss = cvss;
-    }
-
-    const entries = dependencies.get(name) ?? [];
-    entries.push(entry);
-    dependencies.set(name, entries);
+    const entries = dependencies.get(entry.data['dependency-name']) ?? [];
+    entries.push(entry.data);
+    dependencies.set(entry.data['dependency-name'], entries);
   }
 
   return dependencies;
@@ -217,10 +213,6 @@ function getHighestDependencyType(deps: DependabotPullRequestUpdatedDependency[]
     deps.find((dep) => dep['dependency-type'] === 'indirect')?.['dependency-type'] ??
     'unknown'
   );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function getDependencyType(

@@ -119,8 +119,6 @@ The task requires `System.PullRequest.PullRequestId`, so it fails when it is not
 | ghsaId                  | The GHSA ID, when known.                                            |
 | cvss                    | The CVSS value, when known.                                         |
 
-Some values are currently best-effort or unavailable from the persisted Azure metadata, including security advisory fields such as `ghsaId` and `cvss`. For older pull requests created before previous versions were persisted, `previousVersion` may be empty, `updateType` may be `null`, and `compatibilityScore` may be `0`.
-
 ## Advanced
 
 For advanced configuration and detailed documentation, see the [Azure DevOps Extension Documentation](https://www.paklo.app/docs/extensions/azure).
