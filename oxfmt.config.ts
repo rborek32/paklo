@@ -21,6 +21,7 @@ export default defineConfig({
 
     // special files
     '.changeset',
+    '.devcontainer/devcontainer-lock.json',
     '.vscode/settings.json',
     'extensions/azure/**/*.json',
     'packages/core/docker/containers.json',
