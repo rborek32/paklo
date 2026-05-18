@@ -2,3 +2,7 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=auto
+
+# linguist-vendored tells GitHub's language detector (Linguist) to ignore these
+# paths when calculating the repo's language breakdown.
+.agents/** linguist-vendored
