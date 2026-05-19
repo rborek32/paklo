@@ -29,41 +29,12 @@ export function getAzureDevOpsAccessToken() {
 
   const serviceConnectionName = tl.getInput('azureDevOpsServiceConnection');
   if (serviceConnectionName) {
-    tl.debug('Service connection supplied. A token shall be extracted from it.');
-    return getServiceConnectionToken(serviceConnectionName);
+    tl.debug('TFS connection supplied. A token shall be extracted from it.');
+    return tl.getEndpointAuthorizationParameter(serviceConnectionName, 'apitoken', false)!;
   }
 
   tl.debug("No custom token provided. The SystemVssConnection's AccessToken shall be used.");
   return tl.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', false)!;
-}
-
-function getServiceConnectionToken(serviceConnectionName: string): string {
-  const auth = tl.getEndpointAuthorization(serviceConnectionName, false);
-  if (!auth) {
-    throw new Error(`Could not retrieve authorization for service connection '${serviceConnectionName}'`);
-  }
-
-  tl.debug(`Service connection auth scheme: ${auth.scheme}`);
-
-  // Externaltfs (Azure Repos/Team Foundation Server) PAT-based auth
-  if (auth.scheme === 'Token') {
-    const token = auth.parameters['apitoken'];
-    if (token) return token;
-  }
-
-  // Azure DevOps / Azure DevOps (Preview) OAuth or workload identity auth
-  if (auth.scheme === 'OAuth' || auth.scheme === 'PersonalAccessToken') {
-    const token = auth.parameters['AccessToken'];
-    if (token) return token;
-  }
-
-  // Fallback: try both common parameter names for unrecognised schemes
-  const token = auth.parameters['apitoken'] ?? auth.parameters['AccessToken'];
-  if (token) return token;
-
-  throw new Error(
-    `Unsupported service connection auth scheme '${auth.scheme}'. Expected Token, OAuth, or PersonalAccessToken.`,
-  );
 }
 
 /**
