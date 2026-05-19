@@ -145,7 +145,7 @@
     },
     {
       "name": "azureDevOpsServiceConnection",
-      "type": "connectedService:Externaltfs,AzureDevOps",
+      "type": "connectedService:Externaltfs",
       "groupName": "devops",
       "label": "Azure DevOps Service Connection to use.",
       "required": false,
