@@ -69,7 +69,7 @@ export function getTaskInputs(): TaskInputs {
   }
 
   let repository = tl.getInput('targetRepositoryName');
-  const repositoryOverridden = typeof repository === 'string';
+  const repositoryOverridden = Boolean(repository);
   if (projectOverridden && !repositoryOverridden) {
     throw new Error(`Target repository must be provided when target project is overridden`);
   }
