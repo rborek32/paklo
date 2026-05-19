@@ -93,7 +93,7 @@ export function getTaskInputs(): TaskInputs {
 
   // Prepare variables for auto complete
   const setAutoComplete = tl.getBoolInput('setAutoComplete', false);
-  const mergeStrategy = tl.getInput('mergeStrategy', true) as AzdoPullRequestMergeStrategy | undefined;
+  const mergeStrategy = (tl.getInput('mergeStrategy', false) ?? 'squash') as AzdoPullRequestMergeStrategy;
   const autoCompleteIgnoreConfigIds = tl.getDelimitedInput('autoCompleteIgnoreConfigIds', ';', false).map(Number);
 
   // Prepare variables for auto approve
