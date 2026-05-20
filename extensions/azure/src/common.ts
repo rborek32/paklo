@@ -37,7 +37,21 @@ export function getAzureDevOpsAccessToken() {
   const serviceConnectionName = tl.getInput('azureDevOpsServiceConnection');
   if (serviceConnectionName) {
     tl.debug('TFS connection supplied. A token shall be extracted from it.');
-    return tl.getEndpointAuthorizationParameter(serviceConnectionName, 'apitoken', false)!;
+    // Task steps: agent pre-populates the vault for authorized service connections.
+    const vaultToken = tl.getEndpointAuthorizationParameter(serviceConnectionName, 'apitoken', true);
+    if (vaultToken) return vaultToken;
+    // Script steps: the agent strips ENDPOINT_AUTH_* env vars as a security measure,
+    // so the vault is empty. Fall back to an explicit env var that the user can set.
+    const scriptStepToken = process.env['AZDO_SERVICE_CONNECTION_APITOKEN'];
+    if (scriptStepToken) {
+      tl.debug('Using AZDO_SERVICE_CONNECTION_APITOKEN env var as script-step service connection fallback.');
+      return scriptStepToken;
+    }
+    throw new Error(
+      `Cannot obtain a token for service connection '${serviceConnectionName}'. ` +
+        `For task steps, ensure the connection is authorized in pipeline settings. ` +
+        `For script steps, set AZDO_SERVICE_CONNECTION_APITOKEN in the step env block.`,
+    );
   }
 
   // optional=true so the call returns undefined instead of throwing when
