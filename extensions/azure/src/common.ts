@@ -100,6 +100,45 @@ export function getAzureDevOpsAccessToken() {
       'Provide the azureDevOpsAccessToken input, azureDevOpsServiceConnection, ' +
       'or pass SYSTEM_ACCESSTOKEN: $(System.AccessToken) in the script step env.',
   );
+    // Task steps: agent pre-populates the vault for authorized service connections.
+    const vaultToken = tl.getEndpointAuthorizationParameter(serviceConnectionName, 'apitoken', true);
+    if (vaultToken) return vaultToken;
+    // Script steps: the agent strips ENDPOINT_AUTH_* env vars as a security measure,
+    // so the vault is empty. Fall back to an explicit env var that the user can set.
+    const scriptStepToken = process.env['AZDO_SERVICE_CONNECTION_APITOKEN'];
+    if (scriptStepToken) {
+      tl.debug('Using AZDO_SERVICE_CONNECTION_APITOKEN env var as script-step service connection fallback.');
+      return scriptStepToken;
+    }
+    throw new Error(
+      `Cannot obtain a token for service connection '${serviceConnectionName}'. ` +
+        `For task steps, ensure the connection is authorized in pipeline settings. ` +
+        `For script steps, set AZDO_SERVICE_CONNECTION_APITOKEN in the step env block.`,
+    );
+  }
+
+  // optional=true so the call returns undefined instead of throwing when
+  // running as a script step where the agent does not populate ENDPOINT_AUTH_* vars.
+  const sysVssToken = tl.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', true);
+  if (sysVssToken) {
+    tl.debug("Using SystemVssConnection's AccessToken.");
+    return sysVssToken;
+  }
+
+  // The task-lib vault processes and removes INPUT_* / ENDPOINT_AUTH_* from process.env,
+  // but leaves SYSTEM_ACCESSTOKEN untouched. Use it as a last-resort fallback for
+  // script-step invocations where the PAT variable group may not expand.
+  const oauthToken = process.env['SYSTEM_ACCESSTOKEN'];
+  if (oauthToken) {
+    tl.debug('Using pipeline OAuth token (SYSTEM_ACCESSTOKEN) as access token fallback.');
+    return oauthToken;
+  }
+
+  throw new Error(
+    'No Azure DevOps access token could be obtained. ' +
+      'Provide the azureDevOpsAccessToken input, azureDevOpsServiceConnection, ' +
+      'or pass SYSTEM_ACCESSTOKEN: $(System.AccessToken) in the script step env.',
+  );
 }
 
 /**
