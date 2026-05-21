@@ -26,6 +26,13 @@
   "instanceNameFormat": "Dependabot fetch metadata",
   "inputs": [
     {
+      "name": "azureDevOpsEntraServiceConnection",
+      "type": "connectedService:AzureDevOps",
+      "label": "Azure DevOps Service Connection (Entra Workload Identity)",
+      "required": false,
+      "helpMarkDown": "A service connection using Microsoft Entra workload identity federation (PAT-less). Takes priority over the ExternalTFS connection when both are set."
+    },
+    {
       "name": "azureDevOpsServiceConnection",
       "type": "connectedService:Externaltfs",
       "label": "Azure DevOps Service Connection to use.",

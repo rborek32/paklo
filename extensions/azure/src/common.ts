@@ -20,10 +20,11 @@ export function setSecrets(...args: (string | undefined)[]) {
  * Get the access token for Azure DevOps Repos.
  * Priority order:
  * 1. azureDevOpsAccessToken task input (INPUT_AZUREDEVOPSACCESSTOKEN env var)
- * 2. azureDevOpsServiceConnection task input
- * 3. SystemVssConnection endpoint auth (agent-populated for task steps, or via
+ * 2. azureDevOpsEntraServiceConnection task input (Entra workload identity, PAT-less)
+ * 3. azureDevOpsServiceConnection task input (ExternalTFS PAT)
+ * 4. SystemVssConnection endpoint auth (agent-populated for task steps, or via
  *    ENDPOINT_AUTH_PARAMETER_SYSTEMVSSCONNECTION_ACCESSTOKEN env var for script steps)
- * 4. SYSTEM_ACCESSTOKEN env var (pipeline OAuth token — not processed by vault,
+ * 5. SYSTEM_ACCESSTOKEN env var (pipeline OAuth token — not processed by vault,
  *    so it survives in process.env; requires SYSTEM_ACCESSTOKEN: $(System.AccessToken)
  *    in the script step's env section)
  */
@@ -32,6 +33,29 @@ export function getAzureDevOpsAccessToken() {
   if (systemAccessToken) {
     tl.debug('azureDevOpsAccessToken provided, using for authenticating');
     return systemAccessToken;
+  }
+
+  // Path 2: Azure DevOps (Entra workload identity) service connection.
+  // connectedService:AzureDevOps uses scheme 'WorkloadIdentityFederation' or 'OAuth';
+  // the bearer token is in 'AccessToken' or 'accesstoken'. Log the scheme on first use
+  // so any future breakage from Microsoft's (Preview) API is immediately diagnosable.
+  const entraConnectionName = tl.getInput('azureDevOpsEntraServiceConnection');
+  if (entraConnectionName) {
+    tl.debug('Azure DevOps (Entra) connection supplied.');
+    const auth = tl.getEndpointAuthorization(entraConnectionName, true);
+    if (auth) {
+      tl.debug(`Entra connection auth scheme: ${auth.scheme}`);
+      const token =
+        auth.parameters['AccessToken'] || auth.parameters['accesstoken'] || auth.parameters['apitoken'];
+      if (token) return token;
+    }
+    // Script steps: agent strips ENDPOINT_AUTH_* env vars; fall back to explicit env var.
+    const envToken = process.env['AZDO_SERVICE_CONNECTION_APITOKEN'];
+    if (envToken) {
+      tl.debug('Using AZDO_SERVICE_CONNECTION_APITOKEN env var (Entra script-step fallback).');
+      return envToken;
+    }
+    throw new Error(`Cannot obtain a token for Entra service connection '${entraConnectionName}'.`);
   }
 
   const serviceConnectionName = tl.getInput('azureDevOpsServiceConnection');
